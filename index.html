@@ -757,14 +757,28 @@ $locBtn.addEventListener('click', async () => {
     let pos;
     try {
       pos = await getPosition({ timeout: 8000, enableHighAccuracy: true });
-    } catch {
-      pos = await getPosition({ timeout: 10000, enableHighAccuracy: false });
+    } catch (e1) {
+      try {
+        pos = await getPosition({ timeout: 10000, enableHighAccuracy: false });
+      } catch (e2) {
+        showError('No se pudo acceder a tu ubicación. Asegúrate de dar permiso al navegador.');
+        return;
+      }
     }
     const { latitude, longitude } = pos.coords;
-    const place = await reverseGeocode(latitude, longitude);
-    const name = place ? place.name : 'Ubicación actual';
-    const country = place ? (place.country || '') : '';
-    const admin = place?.admin1 ? `${place.admin1}, ` : '';
+    let name = `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
+    let country = '';
+    let admin = '';
+    try {
+      const place = await reverseGeocode(latitude, longitude);
+      if (place) {
+        name = place.name;
+        country = place.country || '';
+        admin = place.admin1 ? `${place.admin1}, ` : '';
+      }
+    } catch {
+      // Fallback: usar coordenadas si la geocodificación falla
+    }
     const fullName = `${name}${admin ? ', '+admin : ''}${country ? ', '+country : ''}`;
     state.city = fullName; state.country = country;
     $searchInput.value = name;
