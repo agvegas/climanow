@@ -736,12 +736,23 @@ document.addEventListener('click', (e) => { if (!e.target.closest('.input-group'
 $searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { $suggestions.classList.remove('show'); searchCity($searchInput.value); } });
 
 // ===================== GEOLOCATION =====================
+function getPosition(options) {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, options);
+  });
+}
+
 $locBtn.addEventListener('click', async () => {
-  if (!navigator.geolocation) { showError('Geolocalización no soportada'); return; }
+  if (!navigator.geolocation) { showError('Geolocalización no soportada en este navegador'); return; }
   $locBtn.classList.add('loading');
   $errorMsg.classList.remove('show');
   try {
-    const pos = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { timeout:10000, enableHighAccuracy:true }));
+    let pos;
+    try {
+      pos = await getPosition({ timeout: 8000, enableHighAccuracy: true });
+    } catch {
+      pos = await getPosition({ timeout: 10000, enableHighAccuracy: false });
+    }
     const { latitude, longitude } = pos.coords;
     const place = await reverseGeocode(latitude, longitude);
     const name = place ? place.name : 'Ubicación actual';
@@ -751,7 +762,13 @@ $locBtn.addEventListener('click', async () => {
     state.city = fullName; state.country = country;
     $searchInput.value = name;
     await loadWeather(latitude, longitude, fullName, country);
-  } catch { showError('No se pudo obtener tu ubicación'); } finally { $locBtn.classList.remove('loading'); }
+  } catch (err) {
+    const msg = err.code === 1 ? 'Permiso denegado. Activa la ubicación en tu navegador.'
+               : err.code === 2 ? 'No se pudo determinar la ubicación.'
+               : err.code === 3 ? 'La solicitud de ubicación tardó demasiado.'
+               : 'No se pudo obtener tu ubicación.';
+    showError(msg);
+  } finally { $locBtn.classList.remove('loading'); }
 });
 
 // ===================== INIT =====================
