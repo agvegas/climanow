@@ -296,9 +296,9 @@ const CONFIG = {
   geocodeUrl: 'https://geocoding-api.open-meteo.com/v1/search',
   reverseGeocodeUrl: 'https://nominatim.openstreetmap.org/reverse',
   weatherUrl: 'https://api.open-meteo.com/v1/forecast',
-  defaultCity: 'Madrid',
-  defaultLat: 40.4168,
-  defaultLon: -3.7038
+  defaultCity: 'Barcelona',
+  defaultLat: 41.3874,
+  defaultLon: 2.1686
 };
 
 // ===================== STATE =====================
@@ -688,6 +688,7 @@ async function loadWeather(lat, lon, cityName, countryName) {
   try {
     const data = await getWeather(lat, lon);
     renderWeather(data, state.city, state.country);
+    localStorage.setItem('climanow_last', JSON.stringify({ lat, lon, city: state.city, country: state.country }));
   } catch (err) {
     showError('Error al obtener los datos del clima');
     if (lat !== CONFIG.defaultLat || lon !== CONFIG.defaultLon)
@@ -793,7 +794,17 @@ $locBtn.addEventListener('click', async () => {
 });
 
 // ===================== INIT =====================
-loadWeather(CONFIG.defaultLat, CONFIG.defaultLon, CONFIG.defaultCity, 'España');
+const saved = localStorage.getItem('climanow_last');
+if (saved) {
+  try {
+    const s = JSON.parse(saved);
+    loadWeather(s.lat, s.lon, s.city, s.country || '');
+  } catch {
+    loadWeather(CONFIG.defaultLat, CONFIG.defaultLon, CONFIG.defaultCity, 'España');
+  }
+} else {
+  loadWeather(CONFIG.defaultLat, CONFIG.defaultLon, CONFIG.defaultCity, 'España');
+}
 </script>
 </body>
 </html>
